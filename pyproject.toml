@@ -9,6 +9,7 @@ dependencies = [
     "flash-attn==2.8.3",
     "tensorboard>=2.20.0",
     "torch==2.8.0",
+    "torch-tb-profiler>=0.4.3",
 ]
 
 [tool.uv.extra-build-dependencies]
