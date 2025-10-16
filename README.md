@@ -1,7 +1,11 @@
 # activation_checkpointing
 Reentrant activation checkpointing algorithm from scratch
 
-## Run the syntetic data experiment
+There is 2 experiments: with the syntetic data (```run_syntetic.py```) and with wikidata (```run_lm_model.py```).
+Activation checkpointing is in ```activation_checkpoint.py```
+Basic Transformer and Language model is in ```model.py```
+
+# Run the syntetic data experiment
 ```bash
 # Setup uv packet manager
 pip install uv
@@ -27,7 +31,7 @@ ssh -L 6006:localhost:6006 root@localhost -p 8022
 http://localhost:6006/#pytorch_profiler
 
 
-## GPU pick memory comparison & Time of the 14 step experiment
+## GPU pick memory comparison & Time of the 14 steps experiment
 
 | seq_len | batch_size | Baseline (MB) | Checkpoint (MB) | Baseline (sec) | Checkpoint (sec) | 
 |---:|---:|---:|---:|---:|---:|
@@ -45,3 +49,39 @@ http://localhost:6006/#pytorch_profiler
 
 ### With activation checkpointing
 ![Checkpoint L=16k B=1](img/checkpoint_b1_L16k.jpg) 
+
+
+# Run the wikidata pretrain experiment
+
+```bash
+# Run the baseline
+uv run python run_lm_model.py --method baseline --profile_dir baseline/
+
+# Run the activation checkpoint version
+uv run python run_lm_model.py --method checkpoint --profile_dir checkpoint/
+```
+
+## GPU pick memory comparison & Time of the 500 steps experiment
+
+| seq_len | batch_size | Baseline (MB) | Checkpoint (MB) | Baseline (sec) | Checkpoint (sec) | 
+|---:|---:|---:|---:|---:|---:|
+| 2048 | 1 | 6649.7 | 4919.0 | 69.05 | 77.30 |
+| 4096 | 1 | 9760.5 | 6587.5 | 121.31 | 139.44 |
+| 8192 | 1 | 15977.2 | 9919.3 | 245.42 | 288.16 |
+
+## Memory profiler L=8k, B=1
+
+### Baseline
+![Baseline L=16k B=1](img/baseline_lm_model.jpg) 
+
+### With activation checkpointing
+![Checkpoint L=16k B=1](img/checkpoint_lm_model.jpg) 
+
+
+## Loss functions for L=2k, 4k, 8k; B=1
+
+### Baseline
+![Baseline L=16k B=1](img/loss_baseline_lm_model.jpg) 
+
+### With activation checkpointing
+![Checkpoint L=16k B=1](img/loss_checkpoint_lm_model.jpg) 

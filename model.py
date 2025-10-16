@@ -116,3 +116,27 @@ class ModelCheckpoint(nn.Module):
         for block in self.blocks:
             x = block(x, cu_seqlens)
         return self.out_layer(x)
+
+
+class LMModel(nn.Module):
+    def __init__(self, vocab_size, dim, ff_dim, num_layers, head_dim, checkpointing: bool = True, use_rng_state: bool = True):
+        super().__init__()
+        self.embed = nn.Embedding(vocab_size, dim)
+        blocks = []
+        for _ in range(num_layers):
+            if checkpointing:
+                blocks.append(ModelBlockCheckpoint(dim, ff_dim, head_dim, use_rng_state))
+            else:
+                blocks.append(ModelBlock(dim, ff_dim, head_dim))
+
+        self.blocks = nn.ModuleList(blocks)
+        self.norm = nn.RMSNorm(dim)
+        self.lm_head = nn.Linear(dim, vocab_size, bias=False)
+        self.lm_head.weight = self.embed.weight # weight tie
+
+    def forward(self, input_ids, cu_seqlens):
+        x = self.embed(input_ids)
+        for blk in self.blocks:
+            x = blk(x, cu_seqlens)
+            x = self.norm(x)
+        return self.lm_head(x)
