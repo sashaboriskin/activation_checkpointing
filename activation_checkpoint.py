@@ -4,15 +4,21 @@ from torch.autograd import Function
 
 class ActivationCheckpoint(Function):
     @staticmethod
-    def forward(ctx, run_fn, *args):
+    def forward(ctx, run_fn, *args, use_rng_state=True):
         ctx.run_fn = run_fn
 
+        ctx.use_rng_state = use_rng_state
         ctx.device_type = "cuda"
         ctx.autocast_kwargs = dict(
             enabled=torch.is_autocast_enabled(ctx.device_type),
             dtype=torch.get_autocast_dtype(ctx.device_type),
             cache_enabled=torch.is_autocast_cache_enabled(),
         )
+
+        # get rng state
+        if use_rng_state:
+            ctx.fwd_cpu_rng_state = torch.get_rng_state()
+            ctx.fwd_cuda_rng_state = torch.cuda.get_rng_state()
 
         # tensor/not_tensor data
         ctx.tensor_idx = []
@@ -47,6 +53,11 @@ class ActivationCheckpoint(Function):
             else:
                 args.append(saved[s_it])
                 s_it += 1
+
+        # set rng state
+        if ctx.use_rng_state:
+            torch.set_rng_state(ctx.fwd_cpu_rng_state)
+            torch.cuda.set_rng_state(ctx.fwd_cuda_rng_state)
 
         # get the autocast_ctx
         autocast_ctx = torch.amp.autocast(
@@ -89,5 +100,5 @@ class ActivationCheckpoint(Function):
         return (None, *grad_inputs)
 
 
-def checkpoint(fn, *args):
-    return ActivationCheckpoint.apply(fn, *args)
+def checkpoint(fn, *args, use_rng_state=True):
+    return ActivationCheckpoint.apply(fn, *args, use_rng_state)

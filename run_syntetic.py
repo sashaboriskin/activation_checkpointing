@@ -20,14 +20,6 @@ def mse_autoencode_step(model, x, cu):
 
 def run_one_length(model, optimizer, dim, B, L, profile_dir="baseline"):
     device = torch.device("cuda")
-
-    cu = torch.arange(
-        0, (B + 1) * L, L, dtype=torch.int32, device=device
-    )  # [0, L, 2L, ..., B*L]
-    x = torch.randn(
-        B * L, dim, device=device
-    )  # [B*L, dim] because of varlen_flash_attention
-
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats()
 
@@ -40,6 +32,13 @@ def run_one_length(model, optimizer, dim, B, L, profile_dir="baseline"):
         with_stack=True,
         with_modules=True,
     ) as prof:
+        cu = torch.arange(
+            0, (B + 1) * L, L, dtype=torch.int32, device=device
+        )  # [0, L, 2L, ..., B*L]
+        x = torch.randn(
+            B * L, dim, device=device
+        )  # [B*L, dim] because of varlen_flash_attention
+
         for _ in range(14):
             optimizer.zero_grad(set_to_none=True)
             loss = mse_autoencode_step(model, x, cu)
@@ -66,6 +65,7 @@ def main():
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--profile_dir", default="checkpoint")
+    ap.add_argument("--use_rng_state", type=bool, default=True)
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
@@ -79,6 +79,7 @@ def main():
             ff_dim=args.ff_dim,
             num_layers=args.num_layers,
             head_dim=args.head_dim,
+            use_rng_state=args.use_rng_state,
         ).to(device)
 
     elif args.method == "baseline":

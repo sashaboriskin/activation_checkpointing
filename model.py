@@ -82,8 +82,9 @@ class Model(nn.Module):
 
 
 class ModelBlockCheckpoint(nn.Module):
-    def __init__(self, dim, ff_dim, head_dim):
+    def __init__(self, dim, ff_dim, head_dim, use_rng_state=True):
         super().__init__()
+        self.use_rng_state = use_rng_state
         self.attention_norm = nn.RMSNorm(dim)
         self.attention = MultiheadSelfAttention(dim, head_dim)
 
@@ -91,20 +92,20 @@ class ModelBlockCheckpoint(nn.Module):
         self.feed_forward = FeedForward(dim, ff_dim)
 
     def forward(self, x, cu_seqlens):
-        def block_fn(x_, cu_):
+        def block_fn(x_, cu_, *args):
             x1 = x_ + self.attention(self.attention_norm(x_), cu_)
             return x1 + self.feed_forward(self.feed_forward_norm(x1))
 
-        return checkpoint(block_fn, x, cu_seqlens)
+        return checkpoint(block_fn, x, cu_seqlens, self.use_rng_state)
 
 
 class ModelCheckpoint(nn.Module):
-    def __init__(self, in_dim, hidden_dim, ff_dim, num_layers, head_dim):
+    def __init__(self, in_dim, hidden_dim, ff_dim, num_layers, head_dim, use_rng_state=True):
         super().__init__()
         self.in_layer = nn.Linear(in_dim, hidden_dim)
         self.blocks = nn.ModuleList(
             [
-                ModelBlockCheckpoint(hidden_dim, ff_dim, head_dim)
+                ModelBlockCheckpoint(hidden_dim, ff_dim, head_dim, use_rng_state)
                 for _ in range(num_layers)
             ]
         )
