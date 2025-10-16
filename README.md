@@ -1,20 +1,20 @@
 # activation_checkpointing
-My activation checkpointing algorithm from scratch
+Reentrant activation checkpointing algorithm from scratch
 
-## Run the exp
+## Run the syntetic data experiment
 ```bash
 # Setup uv packet manager
 pip install uv
 uv sync
 
 # Run the baseline
-uv run python run.py --method checkpoint --profile_dir checkpoint/
+uv run python run_syntetic.py --method baseline --profile_dir baseline/
 
 # Run the activation checkpoint version
-uv run python run.py --method checkpoint --profile_dir checkpoint/
+uv run python run_syntetic.py --method checkpoint --profile_dir checkpoint/
 
 # Run with the concrete batch_size and seq_len_list
-uv run python run.py --B 1 --L_list 2048 4096 8192
+uv run python run_syntetic.py --B 1 --L_list 2048 4096 8192
 
 # Run the tensoboard
 uv run tensorboard --logdir baseline --port 6006
@@ -27,15 +27,15 @@ ssh -L 6006:localhost:6006 root@localhost -p 8022
 http://localhost:6006/#pytorch_profiler
 
 
-## GPU pick memory comparison
+## GPU pick memory comparison & Time of the 14 step experiment
 
-| seq_len | batch_size | Baseline (MB) | Checkpoint (MB) | 
-|---:|---:|---:|---:|
-| 2048  | 1 | 3603.4565 | 3001.5044 | 
-| 4096  | 1 | 5097.8940 | 3017.5044 | 
-| 8192  | 1 | 8086.7690 | 3053.9893 | 
-| 12288 | 1 | 11075.6440 | 3390.3955 |
-| 16384 | 1 | 14064.5190 | 3726.8018 | 
+| seq_len | batch_size | Baseline (MB) | Checkpoint (MB) | Baseline (sec) | Checkpoint (sec) | 
+|---:|---:|---:|---:|---:|---:|
+| 2048  | 1 | 3603.4565 | 3001.5044 | 4.45 | 5.70 |
+| 4096  | 1 | 5097.8940 | 3017.5044 | 4.74 | 6.54 |
+| 8192  | 1 | 8086.7690 | 3053.9893 | 7.60 | 9.08 |
+| 12288 | 1 | 11075.6440 | 3390.3955 | 10.16 | 13.06 |
+| 16384 | 1 | 14064.5190 | 3726.8018 | 15.10 | 18.43 |
 
 ## Memory profiler L=16k, B=1
 

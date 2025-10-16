@@ -1,4 +1,5 @@
 import argparse
+import time
 import torch
 import torch.nn.functional as F
 from torch.profiler import (
@@ -23,6 +24,7 @@ def run_one_length(model, optimizer, dim, B, L, profile_dir="baseline"):
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats()
 
+    start_time = time.perf_counter()
     with profile(
         activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
         schedule=schedule(wait=2, warmup=2, active=10, repeat=1),
@@ -47,7 +49,7 @@ def run_one_length(model, optimizer, dim, B, L, profile_dir="baseline"):
             prof.step()
 
     print(
-        f"{profile_dir} L={L} B={B} peak={torch.cuda.max_memory_allocated() / (1024**2)} MB"
+        f"{profile_dir} L={L} B={B} peak={torch.cuda.max_memory_allocated() / (1024**2)} MB time={time.perf_counter()-start_time} S"
     )
 
 
