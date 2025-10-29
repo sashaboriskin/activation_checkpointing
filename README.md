@@ -25,6 +25,9 @@ uv run tensorboard --logdir baseline --port 6006
 
 # SSH tunnel on local machine
 ssh -L 6006:localhost:6006 root@localhost -p 8022
+
+# Run the test with loss, outputs and gradients equaility
+uv run pytest test_activation_checkpointing.py
 ```
 
 ## Tensorboard is avaliable here
